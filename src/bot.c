@@ -24,7 +24,6 @@ struct File{
     int len;
 };
 
-
 struct User{
     char * user_name;
     struct File * sub_file;
@@ -35,10 +34,7 @@ struct User * All_User;
 int UserNum = 0;
 
 
-pthread_mutex_t lock ; // avoid conflicts while using rbtree
-
-
-
+pthread_mutex_t lock ;
 
 static void *bot_init(struct fuse_conn_info *conn, struct fuse_config *cfg)
 {
@@ -133,14 +129,11 @@ static int bot_getattr(const char *path, struct stat *stbuf, struct fuse_file_in
 
     int res = 0;
     memset(stbuf, 0, sizeof(struct stat));
-
-
     if (strcmp(path, "/") == 0) {
         stbuf->st_mode = S_IFDIR | 0755;
         stbuf->st_nlink = 2;
         return 0 ;
     }
-
     char UserName[MAX_FILE_NAME_LENGTH];
     char FileName[MAX_FILE_NAME_LENGTH];
     Parse(path,UserName,FileName);
@@ -163,28 +156,19 @@ static int bot_getattr(const char *path, struct stat *stbuf, struct fuse_file_in
             stbuf->st_size = file->len ;
         }
     }
-
     pthread_mutex_unlock(&lock) ;
-
     return res ;
-
-
-
 }
 
 static int bot_access(const char* path , int mask){
-
     int res = 0 ;
-
-
     return res ;
-
 }
 
 
 static int bot_mkdir(const char* path, mode_t mode){
     int res = 0 ;
-    // create user
+
     char UserName[MAX_FILE_NAME_LENGTH];
     char FileName[MAX_FILE_NAME_LENGTH];
     Parse(path,UserName,FileName);
@@ -230,22 +214,10 @@ static int bot_read(const char *path, char *buf, size_t size, off_t offset, stru
 {
 
 
-/*    if(strcmp(path+1, options.filename) == 0){
-        int len = strlen(options.contents);
-        if (offset < len) {
-            if (offset + size > len)
-                size = len - offset;
-            memcpy(buf, options.contents + offset, size);
-        } else{
-            size = 0;
-        }
-        return size ;
-    }*/
-
     struct File* file ;
     char UserName[MAX_FILE_NAME_LENGTH];
     char FileName[MAX_FILE_NAME_LENGTH];
-    Parse(path,UserName,FileName) ; // /usr1 + /usr2
+    Parse(path,UserName,FileName) ;
     pthread_mutex_lock(&lock) ;
 
     file = FindFile(UserName,FileName);
@@ -265,7 +237,7 @@ static int bot_write(const char *path, const char *buf, size_t size, off_t offse
     struct File* file ;
     char UserName[MAX_FILE_NAME_LENGTH];
     char FileName[MAX_FILE_NAME_LENGTH];
-    Parse(path,UserName,FileName) ; // /usr1 + /usr2
+    Parse(path,UserName,FileName) ;
     
     pthread_mutex_lock(&lock) ;
     file = FindFile(UserName,FileName);
@@ -283,16 +255,9 @@ static int bot_write(const char *path, const char *buf, size_t size, off_t offse
 static int bot_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags)
 {
 
-    //int res = 0 , usr_flag = 0  ;
-    //int is_root = 0; 
-    //if (strcmp(path, "/") == 0){ // print all the users
-    //    is_root = 1 ;
-    //  filler(buf, options.filename, NULL, 0, 0);
-    //}
-
     char UserName[MAX_FILE_NAME_LENGTH];
     char FileName[MAX_FILE_NAME_LENGTH];
-    Parse(path,UserName,FileName) ; // /usr1 + /usr2
+    Parse(path,UserName,FileName) ;
     
     pthread_mutex_lock(&lock) ;
     
@@ -308,21 +273,6 @@ static int bot_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_
     		filler(buf,(user->sub_file)[i].file_name,NULL,0,0);
     	}
     }
-
-
-/*    struct rb_node *iter = NULL ;
-    for (iter = rb_first(&root);iter;iter=rb_next(iter)){
-        struct bot_file* tmp_file = rb_entry(iter,struct bot_file,node) ;
-        if (isUser(tmp_file->path)){
-            if (usr_flag == 1){
-                filler(buf,tmp_file->path+1,NULL,0,0) ;
-            }
-        }else if (usr_flag == 0 && strcmp(tmp_file->from_user,path)==0){
-            filler(buf,tmp_file->to_user+1,NULL,0,0) ;
-        }
-    }*/
-
-
     pthread_mutex_unlock(&lock) ;
 
 
